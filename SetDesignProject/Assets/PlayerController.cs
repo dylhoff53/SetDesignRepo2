@@ -1,0 +1,165 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerController : MonoBehaviour
+{
+    public float speed;
+    private Vector2 move, mouseLook, joystickLook;
+    private Vector3 rotationTarget;
+    public bool isPc;
+    public GameObject hitbox;
+    public float elapsedTime;
+    public int attackCounter;
+    public bool isAttacking;
+    public int health;
+    public bool hasIFrames;
+
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        move = context.ReadValue<Vector2>();
+    }
+    public void OnMouseLook(InputAction.CallbackContext context)
+    {
+        mouseLook = context.ReadValue<Vector2>();
+    }
+    public void OnJoystickLook(InputAction.CallbackContext context)
+    {
+        joystickLook = context.ReadValue<Vector2>();
+    }
+
+    public void OnAttack()
+    {
+        if(isAttacking == false)
+        {
+            isAttacking = true;
+            hitbox.SetActive(true);
+            attackCounter++;
+            if (attackCounter < 3)
+            {
+                Invoke("DisableHitbox", 0.3f);
+                Debug.Log("POW!");
+                StartCoroutine(Staggered());
+            }
+            else if (attackCounter == 3)
+            {
+                Invoke("DisableHitbox", .65f);
+                Debug.Log("BLAM!");
+                StartCoroutine(Staggered());
+            }
+        }
+    }
+
+    public void DisableHitbox()
+    {
+        hitbox.SetActive(false);
+        if(attackCounter == 3)
+        {
+            attackCounter = 0;
+        }
+        Invoke("CanMove", 0.1f);
+    }
+
+    public void CanMove()
+    {
+        isAttacking = false;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if(isPc && isAttacking == false)
+        {
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(mouseLook);
+
+            if(Physics.Raycast(ray, out hit))
+            {
+                rotationTarget = hit.point;
+            }
+
+            movePlayerWithAim();
+        }else if(isPc == false && isAttacking == false)
+        {
+            if(joystickLook.x == 0 && joystickLook.y == 0)
+            {
+                MovePlayer();
+            } else
+            {
+                movePlayerWithAim();
+            }
+        }
+    }
+
+    public void MovePlayer()
+    {
+        Vector3 movement = new Vector3(move.x, 0f, move.y);
+
+        if(movement != Vector3.zero)
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(movement), 0.15f);
+        }
+
+        transform.Translate(movement * speed * Time.deltaTime, Space.World);
+    }
+
+    public void movePlayerWithAim()
+    {
+        if(isPc)
+        {
+            var lookPos = rotationTarget - transform.position;
+            lookPos.y = 0;
+            var rotation = Quaternion.LookRotation(lookPos);
+
+
+            Vector3 aimDirection = new Vector3(rotationTarget.x, 0f, rotationTarget.z);
+
+            if(aimDirection != Vector3.zero)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, rotation, 0.15f);
+            }
+        } else
+        {
+            Vector3 aimDirection = new Vector3(joystickLook.x, 0f, joystickLook.y);
+
+            if (aimDirection != Vector3.zero)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(aimDirection), 0.15f);
+            }
+        }
+
+        Vector3 movement = new Vector3(move.x, 0f, move.y);
+
+        transform.Translate(movement * speed * Time.deltaTime, Space.World);
+    }
+
+    IEnumerator Staggered()
+    {
+        for (float alpha = 1f; alpha >= 0; alpha -= 0.2f)
+        {
+            transform.Translate(this.transform.forward / 12, Space.World);
+
+            yield return new WaitForSeconds(.02f);
+        }
+    }
+
+    public void GotHit()
+    {
+        if(hasIFrames == false)
+        {
+            health--;
+            hasIFrames = true;
+            if (health <= 0)
+            {
+                Destroy(this.gameObject);
+            }
+            Invoke("NoFrames", 0.1f);
+        }
+    }
+
+    public void NoFrames()
+    {
+        hasIFrames = false;
+    }
+}
