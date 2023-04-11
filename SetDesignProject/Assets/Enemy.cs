@@ -23,8 +23,8 @@ public class Enemy : MonoBehaviour
             Invoke("FeelingBetter", 0.2f);
         } else if (player.GetComponent<PlayerController>().attackCounter > 2)
         {
-            StartCoroutine(Pow());
             isLaunching = true;
+            StartCoroutine(Pow());
             Invoke("FeelingBetter", 0.3f);
         }
         health--;
@@ -56,7 +56,10 @@ public class Enemy : MonoBehaviour
     {
         for (float alpha = 1f; alpha >= 0; alpha -= 0.2f)
         {
-            transform.Translate(player.transform.forward / 1.5f, Space.World);
+            if(isLaunching == true)
+            {
+                transform.Translate(player.transform.forward / 1.5f, Space.World);
+            }
 
             yield return new WaitForSeconds(.02f);
         }
@@ -73,7 +76,7 @@ public class Enemy : MonoBehaviour
             Debug.Log("STUN!");
             gotStag = true;
             isLaunching = false;
-            Invoke("NoStag", 0.3f);
+            Invoke("NoStag", 0.5f);
         }
         else if (other.tag == "DeathWall" && isLaunching == true)
         {

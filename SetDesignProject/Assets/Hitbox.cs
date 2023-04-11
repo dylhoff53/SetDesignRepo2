@@ -6,7 +6,10 @@ public class Hitbox : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
-        other.GetComponent<Enemy>().Punched();
+        if(other.tag == "Enemy")
+        {
+            other.GetComponent<Enemy>().Punched();
+        }
     }
 }
 
